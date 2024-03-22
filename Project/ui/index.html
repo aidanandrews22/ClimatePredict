@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Climate Impact Predictor</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Climate Impact Predictor</h1>
+        <form id="impactForm">
+            <label for="behavior">Enter your carbon emitting behavior:</label>
+            <input type="text" id="behavior" name="behavior">
+
+            <label for="frequency">Select frequency:</label>
+            <select id="frequency" name="frequency" onchange="updateDurationOptions()">
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="biweekly">Bi-Weekly</option>
+                <option value="monthly">Monthly</option>
+                <option value="annually">Annually</option>
+            </select>
+
+            <label for="duration">Select duration:</label>
+            <select id="duration" name="duration">
+                <!-- Duration options will be updated based on frequency selection -->
+            </select>
+
+            <button type="button" onclick="predictImpact()">Predict Impact</button>
+        </form>
+        <div id="result"></div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
