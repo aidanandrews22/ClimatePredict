@@ -66,15 +66,15 @@ The core of ClimatePredict will be a neural network designed to forecast global 
 
 ## References
 - Inspiration Behind Neural Networks in Rust:
-  - Candle project examples
-  - Neural network tutorial with candle (just look under section called “Training simple dense neural networks with Candle”)
-  - Simple neural network tutorial (voting)
+  - [Candle project examples](https://github.com/huggingface/candle/tree/main/candle-examples/examples)
+  - [Neural network tutorial with candle (just look under section called “Training simple dense neural networks with Candle”)](https://rust.marcoinacio.com/data/candle/#training-simple-dense-neural-networks-with-candle)
+  - [Simple neural network tutorial (voting)](https://medium.com/@igumnovnsk/simplified-rust-example-of-training-a-neural-network-based-on-the-candle-framework-by-hugging-face-cf1ccd85a936)
 - Datasets Used in the Project:
-  - CO2 vs. Year Data
-  - Temperature vs. Year Data
-- Other Potential Datasets
-  - Carbon footprint data
-  - Explore the climate indicators
-  - Annual surface temperature change
-  - CO₂ and Greenhouse Gas Emissions - Our World in Data
-  - Other climate datasets
+  - [CO2 vs. Year Data](https://www.kaggle.com/datasets/patricklford/global-co-emissions)
+  - [Temperature vs. Year Data](https://climate.nasa.gov/vital-signs/global-temperature/?intent=121)
+- Other Potential Datasets:
+  - [Carbon footprint data](https://www.kaggle.com/datasets/dumanmesut/individual-carbon-footprint-calculation?resource=download)
+  - [Explore the climate indicators](https://www.epa.gov/climate-indicators/dig-data)
+  - [Annual surface temperature change](https://climatedata.imf.org/datasets/4063314923d74187be9596f10d034914/explore)
+  - [CO₂ and Greenhouse Gas Emissions - Our World in Data](https://ourworldindata.org/co2-and-greenhouse-gas-emissions)
+  - [Other climate datasets](https://ourworldindata.org/search?q=CO2)
