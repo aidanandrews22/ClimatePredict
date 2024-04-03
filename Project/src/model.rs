@@ -1,11 +1,25 @@
-// This will be the file with the entire model for the project
-// The model that i have built so far is a skeleton and will not work until updated
-
+//////////////////////////////////////// dependencies ////////////////////////////////////////
 use candle::nn::{Module, Sequential, Linear};
 use candle::optim::SGD;
 use candle::tensor::Variable;
 
-fn main() {
+
+//////////////////////////////////////// global variables ////////////////////////////////////////
+
+let path_carbon = "./data/carbon-emissions.csv";
+let path_temp = "./data/global-temperature.csv";
+let data = "./emission_temp_data.csv"
+
+
+//////////////////////////////////////// helper functions ////////////////////////////////////////
+
+fn ProcessData() {
+}
+
+
+//////////////////////////////////////// model ////////////////////////////////////////
+
+fn model() {
     let mut model = Sequential::new(vec![
         Box::new(Linear::new(10, 5)),
         Box::new(Linear::new(5, 1)),
