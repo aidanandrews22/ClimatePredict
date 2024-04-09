@@ -6,45 +6,73 @@ use candle_nn::{
     optim::{AdamW, Optimizer, ParamsAdamW},
     Linear, Module, VarBuilder, VarMap,
 };
-use std::error::Error;
+
+use csv::ReaderBuilder;
+use std::{error::Error}; // simd::LaneCount
 use tqdm::tqdm;
 
-
-//////////////////////////////////////// global variables ////////////////////////////////////////
-
-let path_carbon = "./data/carbon-emissions.csv";
-let path_temp = "./data/global-temperature.csv";
-let data = "./emission_temp_data.csv"
-
+use plotpy::{Contour, Plot, Surface};
+use plotters::prelude::*;
 
 //////////////////////////////////////// helper functions ////////////////////////////////////////
 
-fn ProcessData(data_path: &str, device: &Device) -> Result<(Tensor, Tensor), Box<dyn Error>> {
-    let file = File::open(data_path)?;
-    let reader = BufReader::new(file);
+fn process_data(data: &str, device: &Device) -> Result<(Tensor, Tensor, Tensor), Box<dyn Error>> {
+    let file = std::fs::File::open(data).expect("Unable to open file process_data()");
+    let mut reader = ReaderBuilder::new().has_headers(true).from_reader(file);
 
-    let mut emissions = Vec::new();
-    let mut temperatures = Vec::new();
+    let mut years = Vec::new();
+    let mut emmisions = Vec::new();
+    let mut temps = Vec::new();
 
-    for line in reader.lines() {
-        let line = line?;
-        let values: Vec<f32> = line
-            .split(',')
-            .skip(1)
-            .map(|x| x.parse().unwrap_or(0.0))
-            .collect();
-        
-        if values.len() == 2 {
-            emissions.push(values[0]);
-            temperatures.push(values[1]);
-        }
+    for result in reader.records() {
+        let record = result?;
+        years.push(record[0].parse::<f64>().expect("Unable to parse years process_data()"));
+        emmisions.push(record[1].parse::<f64>().expect("Unable to parse emmisions process_data()"));
+        temps.push(record[2].parse::<f64>().expect("Unable to parse temps process_data()"));
     }
 
-    let emissions_tensor = Tensor::from_slice(&emissions)?.view((emissions.len(), 1)).to_device(device)?;
-    let temperatures_tensor = Tensor::from_slice(&temperatures)?.view((temperatures.len(), 1)).to_device(device)?;
+    let years_tensor = Tensor::from_slice(&years, (years.len(),), device);
+    let emissions_tensor = Tensor::from_slice(&emmisions, (emmisions.len(),), device);
+    let temps_tensor = Tensor::from_slice(&temps, (temps.len(),), device);
 
-    Ok((emissions_tensor, temperatures_tensor))
+    let years_tensor = years_tensor?;
+    let emissions_tensor = emissions_tensor?;
+    let temps_tensor = temps_tensor?;
+    
+    let data_tensor = Tensor::stack(&[&years_tensor, &emissions_tensor, &temps_tensor], 1)?;
+
+    println!("Tensor shape: {:?}", data_tensor.shape());
+    println!("Tensor data: \n{}", data_tensor);
+    Ok((years_tensor, emissions_tensor, temps_tensor))
 }
+
+// fn plot_data(years: &Tensor, emissions: &Tensor, temps: &Tensor) -> Result<(), Box<dyn Error>> {
+//     let mut contour = Contour::new();
+//     let years_vec = vec![years.to_vec1::<f64>()?];
+//     let emissions_vec = vec![emissions.to_vec1::<f64>()?];
+//     let temps_vec = vec![temps.to_vec1::<f64>()?];
+//     contour.draw(&years_vec, &emissions_vec, &temps_vec);
+
+//     let mut plot = Plot::new();
+//     plot.add(&contour)
+//         .set_labels("Year", "Emissions")
+//         .set_title("Emissions and temp over time (Contour)");
+
+//     plot.save("contour.svg");
+
+//     let mut surface = Surface::new();
+//     surface.draw(&years_vec, &emissions_vec, &temps_vec);
+
+//     let mut plot = Plot::new();
+//     plot.add(&surface)
+//         .set_labels("Year", "Emissions")
+//         .set_title("Emissions and Temp Over Time (Surface)");
+
+//     plot.save("surface.svg")?;
+    
+//     Ok(())
+// }
+
 
 
 //////////////////////////////////////// model ////////////////////////////////////////
@@ -77,47 +105,29 @@ impl Module for ClimatePredict {
 
 //////////////////////////////////////// main ////////////////////////////////////////
 
-fn main() -> Result<(), Box<dyn Error>> { // main function sets up the device, variable map, optimizer, and training loop
+pub fn main() -> Result<(), Box<dyn Error>> { // main function sets up the device, variable map, optimizer, and training loop
     let device = Device::cuda_if_available(0)?;
     println!("Using device: {:?}", device);
+
+    // let path_carbon = "./data/carbon-emissions.csv";
+    // let path_temp = "./data/global-temperature.csv";
+    
+    let data = "./data/emission_temp_data.csv";
+    let data_processed = process_data(data, &device);
+    let (years_tensor, emissions_tensor, temps_tensor) = process_data(data, &device)?;
+    // plot_data(&years_tensor, &emissions_tensor, &temps_tensor);
+    
     let varmap = VarMap::new();
     let vs = VarBuilder::from_varmap(&varmap, DType::F32, &device);
-
     let climate_predict = ClimatePredict::new(vs)?;
-    let mut optimizer =
-        AdamW::new(varmap.all_vars(), ParamsAdamW::default())?;
-
-    // TODO: Load the dataset and preprocess it into xs_train (CO2 emissions) and ys_train (global temperature)
-    let (emissions_tensor, temperatures_tensor) = ProcessData(data, &device)?;
-
-    // Split the data into training and validation sets
-    let train_ratio = 0.8;
-    let train_size = (emissions_tensor.size()[0] as f64 * train_ratio) as i64;
-
-    // training
-    let xs_train = emissions_tensor.i(..train_size);
-    let ys_train = temperatures_tensor.i(..train_size);
-
-    // validation
-    let xs_val = emissions_tensor.i(train_size..);
-    let ys_val = temperatures_tensor.i(train_size..);
-
-    let n_epochs = 10_000;
-    let mut losses_val = Vec::<f32>::with_capacity(n_epochs);
-
-    for epoch in tqdm(0..n_epochs) {
-        if epoch % (n_epochs / 10) == 0 || epoch == n_epochs - 1 {
-            // TODO: Compute validation loss on a validation set
-            losses_val
-                .push(mse(&dnn.forward(&xs_val)?, &ys_val)?.to_scalar()?);
-        }
-
-        let gradients =
-            mse(&climate_predict.forward(&xs_train)?, &ys_train)?.backward()?;
-        optimizer.step(&gradients)?;
-    }
-    println!("Losses on validation set: {:?}", losses_val);
+    
     Ok(())
 }
 
+
+
 // Command to run the code with GPU support: RUSTFLAGS="-Ctarget-cpu=native" cargo run --release --features cuda
+
+// $env:RUSTFLAGS="-Ctarget-cpu=native"
+// cargo run --release --features cuda
+// cargo run --release --features cuda RUST_BACKTRACE=1
