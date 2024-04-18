@@ -67,3 +67,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     Ok(())
 }
+
+
+// cargo build --bin linear_regression
+// cargo run --bin linear_regression
