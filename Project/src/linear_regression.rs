@@ -3,6 +3,7 @@
 use candle::{Device, Tensor};
 use csv::ReaderBuilder;
 use std::error::Error;
+use std::io;
 
 //////////////////////////////////////// global variables ////////////////////////////////////////
 
@@ -33,40 +34,62 @@ fn process_data(data: &str) -> Result<(Tensor, Tensor), Box<dyn Error>> {
 }
 
 fn linear_regression(x: &Tensor, y: &Tensor) -> Result<(f64, f64), Box<dyn Error>> {
+    // Calculate the mean of the emissions tensor: ∀x ∈ emissions_tensor: (Σx_i + x_i+1) / #of elements
     let x_mean = x.mean(*&[0])?.to_scalar::<f64>()?;
+    // Calculate the mean of the temperature tensor: ∀x ∈ temps_tensor: (Σx_i + x_i+1) / #of elements
     let y_mean = y.mean(*&[0])?.to_scalar::<f64>()?;
 
+    // calculates the difference between each element and the mean, for computing the covariance/variance
     let x_diff = x - x_mean;
     let y_diff = y - y_mean;
 
     let x_diff_tensor = x_diff?;
     let y_diff_tensor = y_diff?;
 
+    // calculates the sum of the products of differences. This is the covariance between x and y (how much the variables change each other)
     let numerator_tensor = (&x_diff_tensor * &y_diff_tensor)?.sum(*&[])? .to_scalar::<f64>()?;
+    // calculates the sum of the squared residuals of x. This is the variance (how spread out the data is)
     let denominator_tensor = (&x_diff_tensor * &x_diff_tensor)?.sum(*&[])? .to_scalar::<f64>()?;
 
+    // This is the ratio of the covariance to variance β=cov(x,y)/var(x)
     let slope = numerator_tensor / denominator_tensor;
+    // This is the y intercept of the regression line α = y(mean) - βx(mean)
     let intercept = y_mean - slope * x_mean;
 
     Ok((slope, intercept))
 }
+
 //////////////////////////////////////// main ////////////////////////////////////////
 
 fn main() -> Result<(), Box<dyn Error>> {
     let (emissions_tensor, temps_tensor) = process_data(DATA)?;
 
-    match linear_regression(&emissions_tensor, &temps_tensor) {
-        Ok((slope, intercept)) => {
-            println!("Slope: {}", slope);
-            println!("Intercept: {}", intercept);
+    let (slope, intercept) = linear_regression(&emissions_tensor, &temps_tensor)?;
+
+    loop {
+        println!("Enter emission value (g CO2/kWh) or type 'exit' to quit:");
+        let mut emission_input = String::new();
+        io::stdin().read_line(&mut emission_input)?;
+        if emission_input.trim().eq("exit") {
+            break;
         }
-        Err(err) => {
-            eprintln!("Error: {}", err);
-        }
+
+        let emission_value: f64 = match emission_input.trim().parse() {
+            Ok(num) => num,
+            Err(_) => {
+                println!("Please enter a valid number.");
+                continue;
+            }
+        };
+
+        // Calculate temperature change based on input predicted_temp = β * input + α (slope intercept formula)
+        let predicted_temp = slope * emission_value + intercept;
+        println!("Predicted temperature change: {:.2} °C", predicted_temp);
     }
 
     Ok(())
 }
+
 
 
 // cargo build --bin linear_regression
