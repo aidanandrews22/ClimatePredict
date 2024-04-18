@@ -1,0 +1,31 @@
+// fn plot_data(years: &Tensor, emissions: &Tensor, temps: &Tensor) -> Result<(), Box<dyn Error>> {
+//     let mut contour = Contour::new();
+//     let years_vec = vec![years.to_vec1::<f64>()?];
+//     let emissions_vec = vec![emissions.to_vec1::<f64>()?];
+//     let temps_vec = vec![temps.to_vec1::<f64>()?];
+//     contour.draw(&years_vec, &emissions_vec, &temps_vec);
+
+//     let mut plot = Plot::new();
+//     plot.add(&contour)
+//         .set_labels("Year", "Emissions")
+//         .set_title("Emissions and temp over time (Contour)");
+
+//     plot.save("contour.svg");
+
+//     let mut surface = Surface::new();
+//     surface.draw(&years_vec, &emissions_vec, &temps_vec);
+
+//     let mut plot = Plot::new();
+//     plot.add(&surface)
+//         .set_labels("Year", "Emissions")
+//         .set_title("Emissions and Temp Over Time (Surface)");
+
+//     plot.save("surface.svg")?;
+    
+//     Ok(())
+// }
+
+// let path_carbon = "./data/carbon-emissions.csv";
+    // let path_temp = "./data/global-temperature.csv";
+
+    // plot_data(&years_tensor, &emissions_tensor, &temps_tensor);

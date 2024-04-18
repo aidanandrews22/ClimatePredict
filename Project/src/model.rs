@@ -1,4 +1,5 @@
 //////////////////////////////////////// dependencies ////////////////////////////////////////
+
 use candle::{DType, Device, Tensor};
 use candle_nn::{
     linear,
@@ -13,6 +14,10 @@ use tqdm::tqdm;
 
 use plotpy::{Contour, Plot, Surface};
 use plotters::prelude::*;
+
+//////////////////////////////////////// global variables ////////////////////////////////////////
+
+const DATA: &str = "./data/emission_temp_data.csv";
 
 //////////////////////////////////////// helper functions ////////////////////////////////////////
 
@@ -43,35 +48,9 @@ fn process_data(data: &str, device: &Device) -> Result<(Tensor, Tensor, Tensor),
 
     println!("Tensor shape: {:?}", data_tensor.shape());
     println!("Tensor data: \n{}", data_tensor);
+
     Ok((years_tensor, emissions_tensor, temps_tensor))
 }
-
-// fn plot_data(years: &Tensor, emissions: &Tensor, temps: &Tensor) -> Result<(), Box<dyn Error>> {
-//     let mut contour = Contour::new();
-//     let years_vec = vec![years.to_vec1::<f64>()?];
-//     let emissions_vec = vec![emissions.to_vec1::<f64>()?];
-//     let temps_vec = vec![temps.to_vec1::<f64>()?];
-//     contour.draw(&years_vec, &emissions_vec, &temps_vec);
-
-//     let mut plot = Plot::new();
-//     plot.add(&contour)
-//         .set_labels("Year", "Emissions")
-//         .set_title("Emissions and temp over time (Contour)");
-
-//     plot.save("contour.svg");
-
-//     let mut surface = Surface::new();
-//     surface.draw(&years_vec, &emissions_vec, &temps_vec);
-
-//     let mut plot = Plot::new();
-//     plot.add(&surface)
-//         .set_labels("Year", "Emissions")
-//         .set_title("Emissions and Temp Over Time (Surface)");
-
-//     plot.save("surface.svg")?;
-    
-//     Ok(())
-// }
 
 
 
@@ -109,13 +88,10 @@ pub fn main() -> Result<(), Box<dyn Error>> { // main function sets up the devic
     let device = Device::cuda_if_available(0)?;
     println!("Using device: {:?}", device);
 
-    // let path_carbon = "./data/carbon-emissions.csv";
-    // let path_temp = "./data/global-temperature.csv";
     
-    let data = "./data/emission_temp_data.csv";
-    let data_processed = process_data(data, &device);
-    let (years_tensor, emissions_tensor, temps_tensor) = process_data(data, &device)?;
-    // plot_data(&years_tensor, &emissions_tensor, &temps_tensor);
+    
+    let data_processed = process_data(DATA, &device);
+    let (years_tensor, emissions_tensor, temps_tensor) = process_data(DATA, &device)?;
     
     let varmap = VarMap::new();
     let vs = VarBuilder::from_varmap(&varmap, DType::F32, &device);
