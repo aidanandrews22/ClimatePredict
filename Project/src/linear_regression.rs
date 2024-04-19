@@ -136,11 +136,11 @@ fn main() -> Result<(), Box<dyn Error>> {
             break;
         }
 
-        let emission_value: f64 = emission_input.trim().parse().unwrap_or_else(|_| {
+        let mut emission_value: f64 = emission_input.trim().parse().unwrap_or_else(|_| {
             println!("Please enter a valid number.");
             0.0 // Default value if parse fails; could also choose to re-prompt for input
         });
-
+        emission_value = emission_value + 40.9;
         // Calculate and print the predicted temperature change based on the input
         let predicted_temp = slope * emission_value + intercept;
         println!("Predicted temperature change: {:.2} °C", predicted_temp);
