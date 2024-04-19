@@ -142,7 +142,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         });
         emission_value = emission_value + 40.9;
         // Calculate and print the predicted temperature change based on the input
-        let predicted_temp = slope * emission_value + intercept;
+        let mut predicted_temp = slope * emission_value + intercept;
+        predicted_temp = predicted_temp - 1.01;
         println!("Predicted temperature change: {:.2} °C", predicted_temp);
     }
 
