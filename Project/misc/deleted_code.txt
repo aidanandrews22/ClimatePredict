@@ -110,3 +110,263 @@ fn test_model_time(data: &str, test_ratio: f64) -> Result<f64, Box<dyn Error>> {
         let predicted_emission = slope_time * time_value + intercept_time;
         println!("Predicted emission: {:.2} GtCO₂", predicted_emission);
     }
+
+
+    //////////////////////////////////////// dependencies ////////////////////////////////////////
+
+use candle::{Device, Tensor};
+use csv::ReaderBuilder;
+use std::error::Error;
+use std::io;
+
+//////////////////////////////////////// global variables ////////////////////////////////////////
+
+const DATA: &str = "./data/emission_temp_data.csv";
+
+//////////////////////////////////////// helper functions ////////////////////////////////////////
+
+fn mean_squared_error(predictions: &[f64], targets: &[f64]) -> f64 {
+    predictions.iter().zip(targets.iter())
+        .map(|(pred, target)| (pred - target).powi(2))
+        .sum::<f64>() / predictions.len() as f64
+}
+
+
+fn process_data(data: &str) -> Result<((Tensor, Tensor, Tensor), (Vec<f64>, Vec<f64>, Vec<f64>)), Box<dyn Error>> {
+    let file = std::fs::File::open(data)?;
+    let mut reader = ReaderBuilder::new().has_headers(true).from_reader(file);
+
+    let mut emissions = Vec::new();
+    let mut temps = Vec::new();
+    let mut times: Vec<f64> = Vec::new();
+
+    for result in reader.records() {
+        let record = result?;
+        times.push(record[0].parse::<f64>()?);
+        emissions.push(record[1].parse::<f64>()?);
+        temps.push(record[2].parse::<f64>()?);
+    }
+
+    let device = Device::new_cuda(0)?;
+    let times_tensor = Tensor::from_slice(&times, (times.len(), 1), &device)?;
+    let emissions_tensor = Tensor::from_slice(&emissions, (emissions.len(), 1), &device)?;
+    let temps_tensor = Tensor::from_slice(&temps, (temps.len(), 1), &device)?;
+
+    Ok(((emissions_tensor, temps_tensor, times_tensor), (emissions, temps, times)))
+}
+
+
+fn split_data(emissions: &[f64], temps: &[f64], test_ratio: f64) -> ((Vec<f64>, Vec<f64>), (Vec<f64>, Vec<f64>)) {
+    let test_size = (emissions.len() as f64 * test_ratio).round() as usize;
+    let training_size = emissions.len() - test_size;
+
+    let training_data = (emissions[..training_size].to_vec(), temps[..training_size].to_vec());
+    let test_data = (emissions[training_size..].to_vec(), temps[training_size..].to_vec());
+
+    (training_data, test_data)
+}
+
+
+fn linear_regression(x: &Tensor, y: &Tensor) -> Result<(f64, f64), Box<dyn Error>> {
+
+    // Calculate the mean of the emissions tensor: ∀x ∈ emissions_tensor: (Σx_i + x_i+1) / #of elements
+    let x_mean = x.mean(0)?.mean(0)?.to_scalar::<f64>()?;
+    
+    // Calculate the mean of the temperature tensor: ∀x ∈ temps_tensor: (Σx_i + x_i+1) / #of elements
+    let y_mean = y.mean(0)?.mean(0)?.to_scalar::<f64>()?;
+
+    // calculates the difference between each element and the mean, for computing the covariance/variance
+    let x_diff = x - x_mean;
+    let y_diff = y - y_mean;
+
+    let x_diff_tensor = x_diff?;
+    let y_diff_tensor = y_diff?;
+
+    // calculates the sum of the products of differences. This is the covariance between x and y (how much the variables change each other)
+    let numerator = (&x_diff_tensor * &y_diff_tensor)?.sum_all()?.to_scalar::<f64>()?;
+    // calculates the sum of the squared residuals of x. This is the variance (how spread out the data is)
+    let denominator = (&x_diff_tensor * &x_diff_tensor)?.sum_all()?.to_scalar::<f64>()?;
+    println!("Numerator: {}, Denominator: {}", numerator, denominator);
+
+    // This is the ratio of the covariance to variance β=cov(x,y)/var(x)
+    let slope = numerator / denominator;
+    // This is the y intercept of the regression line α = y(mean) - βx(mean)
+    let intercept = y_mean - slope * x_mean;
+
+    Ok((slope, intercept))
+}
+fn polynomial_regression_emission_time(x: &Tensor, y: &Tensor, degree: usize) -> Result<Vec<f64>, Box<dyn Error>> {
+    // Calculate the mean of the time tensor: ∀x ∈ time_tensor: (Σx_i + x_i+1) / #of elements
+    let x_mean = x.mean(0)?.mean(0)?.to_scalar::<f64>()?;
+    
+    // Calculate the mean of the emissions tensor: ∀y ∈ emissions_tensor: (Σy_i + y_i+1) / #of elements
+    let y_mean = y.mean(0)?.mean(0)?.to_scalar::<f64>()?;
+
+    // Calculate the difference between each element and the mean for both time and emissions tensors
+    let x_diff = x - x_mean;
+    let y_diff = y - y_mean;
+
+    let x_diff_tensor = x_diff?;
+    let y_diff_tensor = y_diff?;
+
+    // Create a vector to store the powers of the time differences up to the specified degree
+    let mut x_poly = Vec::new();
+    for i in 0..=degree {
+        // Calculate the i-th power of the time differences: x_diff^i
+        let x_pow = x_diff_tensor.pow(i as i64)?;
+        x_poly.push(x_pow);
+    }
+
+    // Stack the powers of time differences into a single tensor: [1, x_diff, x_diff^2, ..., x_diff^degree]
+    let x_poly_tensor = Tensor::stack(&x_poly, 1)?;
+    
+    // Transpose the stacked tensor to prepare for matrix multiplication: [1, x_diff, x_diff^2, ..., x_diff^degree]^T
+    let x_poly_transposed = x_poly_tensor.transpose(0, 1)?;
+
+    // Calculate the matrix product of the transposed tensor and the original tensor: X^T * X
+    let xt_x = x_poly_transposed.matmul(&x_poly_tensor)?;
+    
+    // Calculate the matrix product of the transposed tensor and the emissions differences: X^T * y_diff
+    let xt_y = x_poly_transposed.matmul(&y_diff_tensor)?;
+
+    // Calculate the coefficients of the polynomial regression: (X^T * X)^(-1) * (X^T * y_diff)
+    let coefficients = xt_x.inv()?.matmul(&xt_y)?;
+
+    // Convert the coefficients tensor to a vector of coefficients
+    let coefficients_vec: Vec<f64> = coefficients.strided_index().map(|c| c as f64).collect();
+
+    Ok(coefficients_vec)
+}
+
+fn test_model(data: &str, test_ratio: f64) -> Result<f64, Box<dyn Error>> {
+    let ((emissions_tensor, temps_tensor, times_tensor), (emissions, temps, times)) = process_data(data)?;
+
+    // Split raw data into training and testing sets
+    let ((emissions_train, temps_train), (emissions_test, temps_test)) = split_data(&emissions, &temps, test_ratio);
+
+    // Assuming `device` is already initialized and available
+    let device = Device::new_cuda(0)?;
+
+    // Convert training data into tensors
+    let emissions_tensor_train = Tensor::from_slice(&emissions_train, (emissions_train.len(), 1), &device)?;
+    let temps_tensor_train = Tensor::from_slice(&temps_train, (temps_train.len(), 1), &device)?;
+
+    // Train model using tensors from training data
+    let (slope, intercept) = linear_regression(&emissions_tensor_train, &temps_tensor_train)?;
+
+    // Convert test data into tensors
+    let emissions_tensor_test = Tensor::from_slice(&emissions_test, (emissions_test.len(), 1), &device)?;
+    let temps_tensor_test = Tensor::from_slice(&temps_test, (temps_test.len(), 1), &device)?;
+
+    // Use model to predict temperatures for test data
+    let predictions: Vec<f64> = emissions_tensor_test.strided_index()
+        .map(|em| slope * em as f64 + intercept)
+        .collect();
+
+    // Calculate Mean Squared Error
+    let mse = mean_squared_error(&predictions, &temps_test);
+
+    Ok(mse)
+}
+
+fn test_model_time_poly(data: &str, test_ratio: f64, degree: usize) -> Result<f64, Box<dyn Error>> {
+    let ((emissions_tensor, temps_tensor, times_tensor), (emissions, temps, times)) = process_data(data)?;
+
+    let ((emissions_train, times_train), (emissions_test, times_test)) = split_data(&emissions, &times, test_ratio);
+
+    let device = Device::new_cuda(0)?;
+
+    let emissions_tensor_train = Tensor::from_slice(&emissions_train, (emissions_train.len(), 1), &device)?;
+    let times_tensor_train = Tensor::from_slice(&times_train, (times_train.len(), 1), &device)?;
+
+    let coefficients = polynomial_regression_emission_time(&times_tensor_train, &emissions_tensor_train, degree)?;
+
+    let emissions_tensor_test = Tensor::from_slice(&emissions_test, (emissions_test.len(), 1), &device)?;
+    let times_tensor_test = Tensor::from_slice(&times_test, (times_test.len(), 1), &device)?;
+
+    let predictions: Vec<f64> = times_tensor_test.strided_index()
+        .map(|t| {
+            let mut sum = 0.0;
+            for (i, &c) in coefficients.iter().enumerate() {
+                sum += c * (t as f64).powi(i as i32);
+            }
+            sum
+        })
+        .collect();
+
+    let mse = mean_squared_error(&predictions, &emissions_test);
+
+    Ok(mse)
+}
+
+//////////////////////////////////////// main ////////////////////////////////////////
+
+fn main() -> Result<(), Box<dyn Error>> {
+    // Split ratio for the training and test data
+    let test_ratio = 0.2;  // For example, use 20% of the data for testing
+    let degree = 3;
+    
+    // Run the test model function which also trains the model
+    let mse = test_model(DATA, test_ratio)?;
+    let mse_t = test_model_time_poly(DATA, test_ratio, degree)?;
+    
+    println!("/////////// Main ///////////");
+    // Print the mean squared error to evaluate the model's performance
+    println!("Mean Squared Error on Test Set: {:.3}", mse);
+    println!("Model trained with polynomial coefficients (time):");
+    for (i, &coeff) in coefficients.iter().enumerate() {
+        println!("Coefficient {}: {:.4}", i, coeff);
+    }
+
+    // Example of using the model interactively to predict temperatures based on emission input
+    let ((emissions_tensor, temps_tensor, times_tensor), (_emissions, _temps, _times)) = process_data(DATA)?;
+    let (slope, intercept) = linear_regression(&emissions_tensor, &temps_tensor)?;
+    let coefficients = polynomial_regression_emission_time(&times_tensor, &emissions_tensor, degree)?;
+
+    println!("Model trained with parameters: Slope (β) = {:.4}, Intercept (α) = {:.4}", slope, intercept);
+    println!("Model trained with parameters (time): Slope (β) = {:.4}, Intercept (α) = {:.4}", slope_time, intercept_time);
+
+    loop {
+        println!("Enter emission value (g CO2/kWh) or type 'exit' to quit:");
+        let mut emission_input = String::new();
+        io::stdin().read_line(&mut emission_input)?;
+        if emission_input.trim().eq("exit") {
+            break;
+        }
+
+        let emission_value: f64 = emission_input.trim().parse().unwrap_or_else(|_| {
+            println!("Please enter a valid number.");
+            0.0 // Default value if parse fails; could also choose to re-prompt for input
+        });
+
+        // Calculate and print the predicted temperature change based on the input
+        let predicted_temp = slope * emission_value + intercept;
+        println!("Predicted temperature change: {:.2} °C", predicted_temp);
+    }
+
+    loop {
+        println!("Enter time value (year) or type 'exit' to quit:");
+        let mut time_input = String::new();
+        io::stdin().read_line(&mut time_input)?;
+        if time_input.trim().eq("exit") {
+            break;
+        }
+
+        let time_value: f64 = time_input.trim().parse().unwrap_or_else(|_| {
+            println!("Please enter a valid number.");
+            0.0 // Default value if parse fails; could also choose to re-prompt for input
+        });
+
+        // Calculate and print the predicted emission based on the input
+        let mut predicted_emission = 0.0;
+        for (i, &coeff) in coefficients.iter().enumerate() {
+            predicted_emission += coeff * time_value.powi(i as i32);
+        }
+        println!("Predicted emission: {:.2} GtCO₂", predicted_emission);
+    }
+
+    Ok(())
+}
+
+// cargo build --bin linear_regression --features cuda
+// cargo run --bin linear_regression --features cuda

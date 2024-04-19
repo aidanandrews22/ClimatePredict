@@ -131,11 +131,11 @@ fn main() -> Result<(), Box<dyn Error>> {
             break;
         }
 
-        let time_value: f64 = time_input.trim().parse().unwrap_or_else(|_| {
+        let mut time_value: f64 = time_input.trim().parse().unwrap_or_else(|_| {
             println!("Please enter a valid number.");
             0.0
         });
-
+        time_value = time_value + 2023.0;
         let mut predicted_emission = 0.0;
         for (i, &coeff) in coefficients.iter().enumerate() {
             predicted_emission += coeff * time_value.powi(i as i32);

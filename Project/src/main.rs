@@ -2,6 +2,7 @@
 mod model;
 mod test;
 pub mod linear_regression;
+mod polynomial_regression;
 
 fn main() {
     let _ = model::main();
