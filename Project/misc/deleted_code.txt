@@ -29,3 +29,84 @@
     // let path_temp = "./data/global-temperature.csv";
 
     // plot_data(&years_tensor, &emissions_tensor, &temps_tensor);
+
+/////////////////////////////////////////////////////////////////////////////////////// time linear
+
+
+fn linear_regression_emission_time(x: &Tensor, y: &Tensor) -> Result<(f64, f64), Box<dyn Error>> {
+
+    // Calculate the mean of the emissions tensor: ∀x ∈ emissions_tensor: (Σx_i + x_i+1) / #of elements
+    let x_mean = x.mean(0)?.mean(0)?.to_scalar::<f64>()?;
+    
+    // Calculate the mean of the temperature tensor: ∀x ∈ temps_tensor: (Σx_i + x_i+1) / #of elements
+    let y_mean = y.mean(0)?.mean(0)?.to_scalar::<f64>()?;
+
+    // calculates the difference between each element and the mean, for computing the covariance/variance
+    let x_diff = x - x_mean;
+    let y_diff = y - y_mean;
+
+    let x_diff_tensor = x_diff?;
+    let y_diff_tensor = y_diff?;
+
+    // calculates the sum of the products of differences. This is the covariance between x and y (how much the variables change each other)
+    let numerator = (&x_diff_tensor * &y_diff_tensor)?.sum_all()?.to_scalar::<f64>()?;
+    // calculates the sum of the squared residuals of x. This is the variance (how spread out the data is)
+    let denominator = (&x_diff_tensor * &x_diff_tensor)?.sum_all()?.to_scalar::<f64>()?;
+    println!("Numerator (emissions): {}, Denominator (time): {}", numerator, denominator);
+
+    // This is the ratio of the covariance to variance β=cov(x,y)/var(x)
+    let slope = numerator / denominator;
+    // This is the y intercept of the regression line α = y(mean) - βx(mean)
+    let intercept = y_mean - slope * x_mean;
+
+    Ok((slope, intercept))
+}
+
+fn test_model_time(data: &str, test_ratio: f64) -> Result<f64, Box<dyn Error>> {
+    let ((emissions_tensor, temps_tensor, times_tensor), (emissions, temps, times)) = process_data(data)?;
+
+    // Split raw data into training and testing sets
+    let ((emissions_train, times_train), (emissions_test, times_test)) = split_data(&emissions, &times, test_ratio);
+
+    // Assuming `device` is already initialized and available
+    let device = Device::new_cuda(0)?;
+
+    // Convert training data into tensors
+    let emissions_tensor_train = Tensor::from_slice(&emissions_train, (emissions_train.len(), 1), &device)?;
+    let temps_tensor_train = Tensor::from_slice(&times_train, (times_train.len(), 1), &device)?;
+
+    // Train model using tensors from training data
+    let (slope, intercept) = linear_regression(&emissions_tensor_train, &temps_tensor_train)?;
+
+    // Convert test data into tensors
+    let emissions_tensor_test = Tensor::from_slice(&emissions_test, (emissions_test.len(), 1), &device)?;
+    let temps_tensor_test = Tensor::from_slice(&times_test, (times_test.len(), 1), &device)?;
+
+    // Use model to predict temperatures for test data
+    let predictions: Vec<f64> = emissions_tensor_test.strided_index()
+        .map(|em| slope * em as f64 + intercept)
+        .collect();
+
+    // Calculate Mean Squared Error
+    let mse = mean_squared_error(&predictions, &times_test);
+
+    Ok(mse)
+}
+
+    loop {
+        println!("Enter time value (year) or type 'exit' to quit:");
+        let mut time_input = String::new();
+        io::stdin().read_line(&mut time_input)?;
+        if time_input.trim().eq("exit") {
+            break;
+        }
+
+        let time_value: f64 = time_input.trim().parse().unwrap_or_else(|_| {
+            println!("Please enter a valid number.");
+            0.0 // Default value if parse fails; could also choose to re-prompt for input
+        });
+
+        // Calculate and print the predicted temperature change based on the input
+        let predicted_emission = slope_time * time_value + intercept_time;
+        println!("Predicted emission: {:.2} GtCO₂", predicted_emission);
+    }

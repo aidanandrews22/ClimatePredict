@@ -1,4 +1,4 @@
-Year,Emissions,Lowess
+Year,Emissions(GtCO₂),Lowess(°C)
 1880,0.28,-0.09
 1881,0.295,-0.13
 1882,0.31,-0.16
