@@ -107,3 +107,5 @@ pub fn main() -> Result<(), Box<dyn Error>> { // main function sets up the devic
 // $env:RUSTFLAGS="-Ctarget-cpu=native"
 // cargo run --release --features cuda
 // cargo run --release --features cuda RUST_BACKTRACE=1
+
+// Body Type,Sex,Diet,How Often Shower,Heating Energy Source,Transport,Vehicle Type,Social Activity,Monthly Grocery Bill,Frequency of Traveling by Air,Vehicle Monthly Distance Km,Waste Bag Size,Waste Bag Weekly Count,How Long TV PC Daily Hour,How Many New Clothes Monthly,How Long Internet Daily Hour,Energy efficiency,Recycling,Cooking_With,CarbonEmission
