@@ -1,0 +1,3 @@
+[[bin]]
+name = "rock"
+path = "src/rocket.rs"
