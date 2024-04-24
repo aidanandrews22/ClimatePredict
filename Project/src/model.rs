@@ -1,103 +1,52 @@
 //////////////////////////////////////// dependencies ////////////////////////////////////////
 
-use candle::{DType, Device, Tensor};
-use candle_nn::{
-    linear,
-    loss::mse,
-    optim::{AdamW, Optimizer, ParamsAdamW},
-    Linear, Module, VarBuilder, VarMap,
-};
-
-use csv::ReaderBuilder;
-use std::{error::Error}; // simd::LaneCount
-use tqdm::tqdm;
-
-use plotpy::{Contour, Plot, Surface};
-use plotters::prelude::*;
+extern crate tch;
+use tch::{Device, Kind, Tensor};
 
 //////////////////////////////////////// global variables ////////////////////////////////////////
 
-const DATA: &str = "./data/emission_temp_data.csv";
+// const DATA: &str = "./data/emission_temp_data.csv";
 
 //////////////////////////////////////// helper functions ////////////////////////////////////////
-
-fn process_data(data: &str, device: &Device) -> Result<(Tensor, Tensor, Tensor), Box<dyn Error>> {
-    let file = std::fs::File::open(data).expect("Unable to open file process_data()");
-    let mut reader = ReaderBuilder::new().has_headers(true).from_reader(file);
-
-    let mut years = Vec::new();
-    let mut emmisions = Vec::new();
-    let mut temps = Vec::new();
-
-    for result in reader.records() {
-        let record = result?;
-        years.push(record[0].parse::<f64>().expect("Unable to parse years process_data()"));
-        emmisions.push(record[1].parse::<f64>().expect("Unable to parse emmisions process_data()"));
-        temps.push(record[2].parse::<f64>().expect("Unable to parse temps process_data()"));
-    }
-
-    let years_tensor = Tensor::from_slice(&years, (years.len(),), device);
-    let emissions_tensor = Tensor::from_slice(&emmisions, (emmisions.len(),), device);
-    let temps_tensor = Tensor::from_slice(&temps, (temps.len(),), device);
-
-    let years_tensor = years_tensor?;
-    let emissions_tensor = emissions_tensor?;
-    let temps_tensor = temps_tensor?;
-    
-    let data_tensor = Tensor::stack(&[&years_tensor, &emissions_tensor, &temps_tensor], 1)?;
-
-    println!("Tensor shape: {:?}", data_tensor.shape());
-    println!("Tensor data: \n{}", data_tensor);
-
-    Ok((years_tensor, emissions_tensor, temps_tensor))
-}
 
 
 
 //////////////////////////////////////// model ////////////////////////////////////////
 
-struct ClimatePredict { // This is the struct representing the neural network model
-    ln1: Linear,
-    ln2: Linear,
-    ln3: Linear,
-}
-
-impl ClimatePredict { // This is the constructor for the ClimatePredict struct
-    fn new(vs: VarBuilder) -> Result<Self, Box<dyn Error>> {
-        let ln1 = linear(1, 64, vs.pp("ln1"))?; // first hidden layer with 64 neurons
-        let ln2 = linear(64, 32, vs.pp("ln2"))?; // second hidden layer with 32 neurons
-        let ln3 = linear(32, 1, vs.pp("ln3"))?; // output neuron
-        Ok(Self { ln1, ln2, ln3 })
-    }
-}
-
-impl Module for ClimatePredict {
-    fn forward(&self, xs: &Tensor) -> candle::Result<Tensor> { // this method defines the forward pass of the neural network
-        let xs = self.ln1.forward(xs)?; // pass tensor to first layer
-        let xs = xs.relu()?; // apply relu activation function
-        let xs = self.ln2.forward(&xs)?; // pass to second layer
-        let xs = xs.relu()?; // apply relu
-        self.ln3.forward(&xs) // pass to output layer
-    }
-}
 
 
 //////////////////////////////////////// main ////////////////////////////////////////
 
-pub fn main() -> Result<(), Box<dyn Error>> { // main function sets up the device, variable map, optimizer, and training loop
-    let device = Device::cuda_if_available(0)?;
-    println!("Using device: {:?}", device);
+fn main() {
+    // Check if CUDA is available and choose the device accordingly
+    let device = if tch::Cuda::is_available() {
+        println!("CUDA is available. Using GPU.");
+        Device::cuda_if_available()
+    } else {
+        println!("CUDA is not available. Using CPU.");
+        Device::Cpu
+    };
 
-    
-    
-    let data_processed = process_data(DATA, &device);
-    let (years_tensor, emissions_tensor, temps_tensor) = process_data(DATA, &device)?;
-    
-    let varmap = VarMap::new();
-    let vs = VarBuilder::from_varmap(&varmap, DType::F32, &device);
-    let climate_predict = ClimatePredict::new(vs)?;
-    
-    Ok(())
+    // Define the size of the matrices
+    let size = 1000;  // Large enough to be computationally expensive
+    let iterations = 10000000;  // Number of times to perform the multiplication
+
+    // Create two large tensors on the selected device
+    let matrix_a = Tensor::randn(&[size, size], (Kind::Float, device));
+    let matrix_b = Tensor::randn(&[size, size], (Kind::Float, device));
+
+    // Perform matrix multiplications repeatedly
+    for i in 0..iterations {
+        let start = std::time::Instant::now();
+        let result = matrix_a.matmul(&matrix_b);
+        let duration = start.elapsed();
+
+        println!("Iteration {}: Time taken for matrix multiplication: {:?}", i + 1, duration);
+        // Optionally print a summary of the resulting matrix to ensure computation is occurring
+        println!("Result summary: mean = {:.4}, std = {:.4}", result.mean(Kind::Float), result.std(true));
+    }
+
+    println!("Stress test completed.");
 }
 
 
@@ -109,3 +58,9 @@ pub fn main() -> Result<(), Box<dyn Error>> { // main function sets up the devic
 // cargo run --release --features cuda RUST_BACKTRACE=1
 
 // Body Type,Sex,Diet,How Often Shower,Heating Energy Source,Transport,Vehicle Type,Social Activity,Monthly Grocery Bill,Frequency of Traveling by Air,Vehicle Monthly Distance Km,Waste Bag Size,Waste Bag Weekly Count,How Long TV PC Daily Hour,How Many New Clothes Monthly,How Long Internet Daily Hour,Energy efficiency,Recycling,Cooking_With,CarbonEmission
+
+
+// cd "C:\Users\aidan\OneDrive\Documents\Code\CS128H-Project\Project"
+// $Env:LIBTORCH_BYPASS_VERSION_CHECK = "1"     
+// $Env:Path += ";C:\Users\aidan\libtorch\lib"  
+// nvidia-smi --query-gpu=index,name,driver_version,pstate,fan.speed,temperature.gpu,utilization.gpu,utilization.memory,memory.total,memory.free,memory.used,power.draw --format=csv -l 1

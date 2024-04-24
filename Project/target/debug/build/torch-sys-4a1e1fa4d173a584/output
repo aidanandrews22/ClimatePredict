@@ -1,0 +1,123 @@
+cargo:rerun-if-env-changed=LIBTORCH_USE_PYTORCH
+cargo:rerun-if-env-changed=LIBTORCH
+cargo:rerun-if-env-changed=LIBTORCH_INCLUDE
+cargo:rerun-if-env-changed=LIBTORCH_LIB
+cargo:rerun-if-env-changed=LIBTORCH_BYPASS_VERSION_CHECK
+cargo:rerun-if-env-changed=LIBTORCH_CXX11_ABI
+cargo:rerun-if-env-changed=LIBTORCH_STATIC
+cargo:rustc-link-search=native=C:\Users\aidan\libtorch\lib
+cargo:rerun-if-changed=libtch/dummy_cuda_dependency.cpp
+cargo:rerun-if-changed=libtch/torch_python.cpp
+cargo:rerun-if-changed=libtch/torch_python.h
+cargo:rerun-if-changed=libtch/torch_api_generated.cpp
+cargo:rerun-if-changed=libtch/torch_api_generated.h
+cargo:rerun-if-changed=libtch/torch_api.cpp
+cargo:rerun-if-changed=libtch/torch_api.h
+cargo:rerun-if-changed=libtch/stb_image_write.h
+cargo:rerun-if-changed=libtch/stb_image_resize.h
+cargo:rerun-if-changed=libtch/stb_image.h
+TARGET = Some("x86_64-pc-windows-msvc")
+OPT_LEVEL = Some("3")
+HOST = Some("x86_64-pc-windows-msvc")
+cargo:rerun-if-env-changed=CXX_x86_64-pc-windows-msvc
+CXX_x86_64-pc-windows-msvc = None
+cargo:rerun-if-env-changed=CXX_x86_64_pc_windows_msvc
+CXX_x86_64_pc_windows_msvc = None
+cargo:rerun-if-env-changed=HOST_CXX
+HOST_CXX = None
+cargo:rerun-if-env-changed=CXX
+CXX = None
+cargo:rerun-if-env-changed=CRATE_CC_NO_DEFAULTS
+CRATE_CC_NO_DEFAULTS = None
+CARGO_CFG_TARGET_FEATURE = Some("fxsr,sse,sse2")
+DEBUG = Some("true")
+cargo:rerun-if-env-changed=CXXFLAGS_x86_64-pc-windows-msvc
+CXXFLAGS_x86_64-pc-windows-msvc = None
+cargo:rerun-if-env-changed=CXXFLAGS_x86_64_pc_windows_msvc
+CXXFLAGS_x86_64_pc_windows_msvc = None
+cargo:rerun-if-env-changed=HOST_CXXFLAGS
+HOST_CXXFLAGS = None
+cargo:rerun-if-env-changed=CXXFLAGS
+CXXFLAGS = None
+cargo:rerun-if-env-changed=CC_ENABLE_DEBUG_OUTPUT
+torch_api.cpp
+dummy_cuda_dependency.cpp
+torch_api_generated.cpp
+libtch/dummy_cuda_dependency.cpp(20): warning C4530: C++ exception handler used, but unwind semantics are not enabled. Specify /EHsc
+C:\Users\aidan\libtorch\include\ATen/core/ivalue_inl.h(919): warning C4530: C++ exception handler used, but unwind semantics are not enabled. Specify /EHsc
+C:\Users\aidan\libtorch\include\ATen/core/ivalue_inl.h(919): warning C4530: C++ exception handler used, but unwind semantics are not enabled. Specify /EHsc
+libtch/torch_api.cpp(195): warning C4305: 'return': truncation from 'int' to 'bool'
+libtch/torch_api.cpp(204): warning C4305: 'return': truncation from 'int' to 'bool'
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.39.33519\include\optional(82): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.39.33519\include\optional(82): note: the template instantiation context (the oldest one first) is
+C:\Users\aidan\libtorch\include\ATen/core/function_schema.h(437): note: see reference to function template instantiation 'std::optional<int32_t>::optional<const I,0>(_Ty2 &&) noexcept' being compiled
+        with
+        [
+            I=unsigned __int64,
+            _Ty2=unsigned __int64
+        ]
+C:\Users\aidan\libtorch\include\ATen/core/function_schema.h(437): note: see the first reference to 'std::optional<int32_t>::optional' in 'c10::FunctionSchema::argumentIndexWithName'
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.39.33519\include\optional(248): note: see reference to function template instantiation 'std::_Optional_construct_base<_Ty>::_Optional_construct_base<const unsigned __int64>(std::in_place_t,const unsigned __int64 &&)' being compiled
+        with
+        [
+            _Ty=int32_t
+        ]
+libtch/torch_api_generated.cpp(18532): note: see reference to function template instantiation 'std::_Optional_destruct_base<_Ty,true>::_Optional_destruct_base<const unsigned __int64>(std::in_place_t,const unsigned __int64 &&) noexcept' being compiled
+        with
+        [
+            _Ty=int32_t
+        ]
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.39.33519\include\optional(82): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.39.33519\include\optional(82): note: the template instantiation context (the oldest one first) is
+C:\Users\aidan\libtorch\include\ATen/core/function_schema.h(437): note: see reference to function template instantiation 'std::optional<int32_t>::optional<const I,0>(_Ty2 &&) noexcept' being compiled
+        with
+        [
+            I=unsigned __int64,
+            _Ty2=unsigned __int64
+        ]
+C:\Users\aidan\libtorch\include\ATen/core/function_schema.h(437): note: see the first reference to 'std::optional<int32_t>::optional' in 'c10::FunctionSchema::argumentIndexWithName'
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.39.33519\include\optional(248): note: see reference to function template instantiation 'std::_Optional_construct_base<_Ty>::_Optional_construct_base<const unsigned __int64>(std::in_place_t,const unsigned __int64 &&)' being compiled
+        with
+        [
+            _Ty=int32_t
+        ]
+libtch/torch_api.cpp(1671): note: see reference to function template instantiation 'std::_Optional_destruct_base<_Ty,true>::_Optional_destruct_base<const unsigned __int64>(std::in_place_t,const unsigned __int64 &&) noexcept' being compiled
+        with
+        [
+            _Ty=int32_t
+        ]
+exit code: 0
+exit code: 0
+exit code: 0
+cargo:rerun-if-env-changed=AR_x86_64-pc-windows-msvc
+AR_x86_64-pc-windows-msvc = None
+cargo:rerun-if-env-changed=AR_x86_64_pc_windows_msvc
+AR_x86_64_pc_windows_msvc = None
+cargo:rerun-if-env-changed=HOST_AR
+HOST_AR = None
+cargo:rerun-if-env-changed=AR
+AR = None
+cargo:rerun-if-env-changed=ARFLAGS_x86_64-pc-windows-msvc
+ARFLAGS_x86_64-pc-windows-msvc = None
+cargo:rerun-if-env-changed=ARFLAGS_x86_64_pc_windows_msvc
+ARFLAGS_x86_64_pc_windows_msvc = None
+cargo:rerun-if-env-changed=HOST_ARFLAGS
+HOST_ARFLAGS = None
+cargo:rerun-if-env-changed=ARFLAGS
+ARFLAGS = None
+cargo:rustc-link-search=native=C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.39.33519\atlmfc\lib\x64
+cargo:rustc-link-lib=static=tch
+cargo:rustc-link-search=native=C:\Users\aidan\OneDrive\Documents\Code\CS128H-Project\Project\target\debug\build\torch-sys-4a1e1fa4d173a584\out
+cargo:rerun-if-env-changed=CXXSTDLIB_x86_64-pc-windows-msvc
+CXXSTDLIB_x86_64-pc-windows-msvc = None
+cargo:rerun-if-env-changed=CXXSTDLIB_x86_64_pc_windows_msvc
+CXXSTDLIB_x86_64_pc_windows_msvc = None
+cargo:rerun-if-env-changed=HOST_CXXSTDLIB
+HOST_CXXSTDLIB = None
+cargo:rerun-if-env-changed=CXXSTDLIB
+CXXSTDLIB = None
+cargo:rustc-link-lib=static=tch
+cargo:rustc-link-lib=torch_cuda
+cargo:rustc-link-lib=torch_cpu
+cargo:rustc-link-lib=torch
+cargo:rustc-link-lib=c10

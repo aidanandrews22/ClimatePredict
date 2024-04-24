@@ -13,6 +13,11 @@ rustacuda_core = "0.1"
 csv = "1.1"
 plotpy = "0.6.1"
 plotters = "0.3"
+tch = "0.15.0"
+rand = "0.8"
+rayon = "1.5"
+serde = { version = "1.0", features = ["derive"] }
+smartcore = "0.3.2"
 
 [[bin]]
 name = "linear_regression"
@@ -25,6 +30,10 @@ path = "src/model.rs"
 [[bin]]
 name = "polynomial_regression"
 path = "src/polynomial_regression.rs"
+
+[[bin]]
+name = "rf"
+path = "src/random_forest.rs"
 
 [profile.dev.package."*"]
 opt-level = 3
