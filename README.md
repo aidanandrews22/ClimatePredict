@@ -19,7 +19,7 @@ The core of ClimatePredict will be a regression model designed to forecast globa
   - Collect historical data on global CO2 emissions and temperature changes.
   - Clean and preprocess the data to ensure it’s suitable for machine learning training including normalization and handling missing values.
 
-- **Neural Network Design:**
+- **Design:**
   - Design a machine learning architecture suitable for regression analysis likely consisting of multiple layers including input, hidden, and output layers.
   - The input layer will accept CO2 emissions data, and the output layer will predict the corresponding global temperature.
   - Thinking of using an LSTM neural network
