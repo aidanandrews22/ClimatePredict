@@ -150,5 +150,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-// cargo build --bin linear_regression --features cuda
-// cargo run --bin linear_regression --features cuda
+// may need to run cargo update
+// cargo build --bin lin --features cuda
+// cargo run --bin lin --features cuda

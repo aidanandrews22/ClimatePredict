@@ -13,14 +13,13 @@ rustacuda_core = "0.1"
 csv = "1.1"
 plotpy = "0.6.1"
 plotters = "0.3"
-tch = "0.15.0"
 rand = "0.8"
 rayon = "1.5"
 serde = { version = "1.0", features = ["derive"] }
 smartcore = "0.3.2"
 
 [[bin]]
-name = "linear_regression"
+name = "lin"
 path = "src/linear_regression.rs"
 
 [[bin]]
@@ -28,7 +27,7 @@ name = "model"
 path = "src/model.rs"
 
 [[bin]]
-name = "polynomial_regression"
+name = "poly"
 path = "src/polynomial_regression.rs"
 
 [[bin]]
